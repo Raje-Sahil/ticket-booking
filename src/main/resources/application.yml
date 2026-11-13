@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: ticket-booking
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ticketdb
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true

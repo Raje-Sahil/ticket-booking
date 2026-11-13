@@ -12,16 +12,38 @@ import com.sahil.ticketbooking.model.BookingStatus;
 import com.sahil.ticketbooking.model.Seat;
 import com.sahil.ticketbooking.repository.BookingRepository;
 import com.sahil.ticketbooking.repository.SeatRepository;
+import com.sahil.ticketbooking.repository.UserRepository;
 
 @Service
 public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final SeatRepository seatRepository;
+    private final UserRepository userRepository;
 
-    public BookingService(BookingRepository bookingRepository, SeatRepository seatRepository) {
+    public BookingService(BookingRepository bookingRepository,
+                          SeatRepository seatRepository,
+                          UserRepository userRepository) {
         this.bookingRepository = bookingRepository;
         this.seatRepository = seatRepository;
+        this.userRepository = userRepository;
+    }
+
+    /**
+     * The method the REST API uses: validates the user, locks the seat row
+     * (pessimistic strategy), checks the seat is free, then inserts the booking.
+     */
+    @Transactional
+    public Booking bookSeat(Long seatId, Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new ResourceNotFoundException("User not found: " + userId);
+        }
+        Optional<Seat> seat = seatRepository.findByIdForUpdate(seatId);
+        if (!seat.isPresent()) {
+            throw new ResourceNotFoundException("Seat not found: " + seatId);
+        }
+        ensureSeatIsFree(seatId);
+        return insertBooking(seatId, userId);
     }
 
     /**
@@ -36,8 +58,6 @@ public class BookingService {
 
     /**
      * PESSIMISTIC version: lock the seat row first, then check and insert.
-     * Only one transaction at a time can hold the lock for a given seat,
-     * so the check can no longer be fooled by a concurrent booking.
      */
     @Transactional
     public Booking bookSeatPessimistic(Long seatId, Long userId) {
@@ -51,8 +71,7 @@ public class BookingService {
 
     /**
      * OPTIMISTIC version: no lock while reading. Before inserting, bump the seat's
-     * version only if it is still the version we read. If another booking got in
-     * first, the bump touches 0 rows and we back out.
+     * version only if it is still the version we read.
      */
     @Transactional
     public Booking bookSeatOptimistic(Long seatId, Long userId) {

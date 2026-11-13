@@ -1,5 +1,6 @@
 package com.sahil.ticketbooking.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,4 +26,7 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     @Query(value = "UPDATE seats SET version = version + 1 WHERE id = :id AND version = :version",
             nativeQuery = true)
     int incrementVersionIfUnchanged(@Param("id") Long id, @Param("version") Long version);
+
+    // All seats of one event, in creation order.
+    List<Seat> findByEventIdOrderById(Long eventId);
 }

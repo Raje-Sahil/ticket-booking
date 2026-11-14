@@ -10,6 +10,7 @@ public class BookingResponse {
     private Long seatId;
     private Long userId;
     private String status;
+    private Instant holdExpiresAt;
     private Instant createdAt;
 
     public static BookingResponse from(Booking booking) {
@@ -18,6 +19,7 @@ public class BookingResponse {
         response.seatId = booking.getSeatId();
         response.userId = booking.getUserId();
         response.status = booking.getStatus().name();
+        response.holdExpiresAt = booking.getHoldExpiresAt();
         response.createdAt = booking.getCreatedAt();
         return response;
     }
@@ -36,6 +38,10 @@ public class BookingResponse {
 
     public String getStatus() {
         return status;
+    }
+
+    public Instant getHoldExpiresAt() {
+        return holdExpiresAt;
     }
 
     public Instant getCreatedAt() {

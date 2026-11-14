@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.sahil.ticketbooking.service.ConcurrentBookingException;
+import com.sahil.ticketbooking.service.InvalidBookingStateException;
 import com.sahil.ticketbooking.service.ResourceNotFoundException;
 import com.sahil.ticketbooking.service.SeatAlreadyBookedException;
 
@@ -23,6 +24,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConcurrentBookingException.class)
     public ProblemDetail handleConcurrentBooking(ConcurrentBookingException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidBookingStateException.class)
+    public ProblemDetail handleInvalidState(InvalidBookingStateException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 

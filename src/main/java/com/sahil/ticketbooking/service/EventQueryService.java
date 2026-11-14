@@ -1,7 +1,7 @@
 package com.sahil.ticketbooking.service;
 
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -49,13 +49,13 @@ public class EventQueryService {
         }
 
         List<Seat> seats = seatRepository.findByEventIdOrderById(eventId);
-        List<Long> takenIds = bookingRepository.findActiveSeatIdsForEvent(
-                eventId, Arrays.asList(BookingStatus.HELD, BookingStatus.CONFIRMED));
-        Set<Long> taken = new HashSet<Long>(takenIds);
+        List<Long> unavailableIds = bookingRepository.findUnavailableSeatIdsForEvent(
+                eventId, Instant.now(), BookingStatus.HELD, BookingStatus.CONFIRMED);
+        Set<Long> unavailable = new HashSet<Long>(unavailableIds);
 
         List<SeatResponse> result = new ArrayList<SeatResponse>();
         for (Seat seat : seats) {
-            boolean available = !taken.contains(seat.getId());
+            boolean available = !unavailable.contains(seat.getId());
             result.add(new SeatResponse(seat.getId(), seat.getSeatLabel(), available));
         }
         return result;

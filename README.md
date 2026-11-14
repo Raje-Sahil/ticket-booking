@@ -1,5 +1,7 @@
 # Concurrency-safe ticket booking
 
+[![CI](https://github.com/Raje-Sahil/ticket-booking/actions/workflows/ci.yml/badge.svg)](https://github.com/Raje-Sahil/ticket-booking/actions/workflows/ci.yml)
+
 A Java / Spring Boot / PostgreSQL service that answers one question:
 **what happens when hundreds of users try to book the same seat at the same moment?**
 
@@ -139,3 +141,8 @@ Tests run against a separate database. Create it once with `psql -U postgres -c 
 - The optimistic strategy is implemented and tested but not used by the API; the pessimistic one is, because on a hot seat it gives clean rejections with no wasted work.
 
 
+
+
+## License
+
+MIT. See the LICENSE file.

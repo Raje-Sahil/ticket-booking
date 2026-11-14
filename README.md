@@ -126,7 +126,7 @@ Run the tests:
 .\mvnw.cmd test
 ```
 
-The tests and the seed script **truncate the tables in `ticketdb`**, so do not point them at data you care about.
+Tests run against a separate database. Create it once with `psql -U postgres -c "CREATE DATABASE ticketdb_test;"` (Flyway creates the schema on the first run). The tests truncate the tables in `ticketdb_test` and never touch `ticketdb`; the seed script truncates the tables in `ticketdb`.
 
 ## Project layout
 
@@ -136,3 +136,4 @@ The tests and the seed script **truncate the tables in `ticketdb`**, so do not p
 - **Idempotency keys are global,** not scoped per user. A key used by one user and then by another gets a 422.
 - Tested against a single application instance and one local PostgreSQL. The benchmark numbers are from one laptop.
 - The optimistic strategy is implemented and tested but not used by the API; the pessimistic one is, because on a hot seat it gives clean rejections with no wasted work.
+

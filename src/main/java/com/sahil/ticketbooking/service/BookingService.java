@@ -39,25 +39,17 @@ public class BookingService {
     // Methods used by the REST API
     // ------------------------------------------------------------------
 
-    /** Books a seat immediately (status CONFIRMED). */
+    /** Books a seat immediately (status CONFIRMED). The idempotency key may be null. */
     @Transactional
-    public Booking bookSeat(Long seatId, Long userId) {
-        requireUser(userId);
-        lockSeat(seatId);
-        expireStaleHolds(seatId);
-        ensureSeatIsFree(seatId);
-        return insertBooking(seatId, userId, BookingStatus.CONFIRMED, null);
+    public BookingOutcome bookSeat(Long seatId, Long userId, String idempotencyKey) {
+        return createBooking(seatId, userId, BookingStatus.CONFIRMED, null, idempotencyKey);
     }
 
-    /** Holds a seat for a few minutes (status HELD) while the user pays. */
+    /** Holds a seat for a few minutes (status HELD). The idempotency key may be null. */
     @Transactional
-    public Booking holdSeat(Long seatId, Long userId) {
-        requireUser(userId);
-        lockSeat(seatId);
-        expireStaleHolds(seatId);
-        ensureSeatIsFree(seatId);
+    public BookingOutcome holdSeat(Long seatId, Long userId, String idempotencyKey) {
         Instant expiresAt = Instant.now().plus(holdMinutes, ChronoUnit.MINUTES);
-        return insertBooking(seatId, userId, BookingStatus.HELD, expiresAt);
+        return createBooking(seatId, userId, BookingStatus.HELD, expiresAt, idempotencyKey);
     }
 
     /** Turns a live hold into a confirmed booking. Confirming twice is harmless. */
@@ -147,6 +139,30 @@ public class BookingService {
     // Helpers
     // ------------------------------------------------------------------
 
+    private BookingOutcome createBooking(Long seatId, Long userId, BookingStatus status,
+                                         Instant holdExpiresAt, String idempotencyKey) {
+        requireUser(userId);
+        lockSeat(seatId);
+
+        // The key is checked AFTER the seat lock is taken. Concurrent retries of the
+        // same request line up behind the lock, so each one sees the first one's booking.
+        if (idempotencyKey != null) {
+            Optional<Booking> existing = bookingRepository.findByIdempotencyKey(idempotencyKey);
+            if (existing.isPresent()) {
+                Booking earlier = existing.get();
+                if (!earlier.getSeatId().equals(seatId) || !earlier.getUserId().equals(userId)) {
+                    throw new IdempotencyKeyMismatchException(idempotencyKey);
+                }
+                return new BookingOutcome(earlier, true);
+            }
+        }
+
+        expireStaleHolds(seatId);
+        ensureSeatIsFree(seatId);
+        Booking created = insertBooking(seatId, userId, status, holdExpiresAt, idempotencyKey);
+        return new BookingOutcome(created, false);
+    }
+
     private void requireUser(Long userId) {
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("User not found: " + userId);
@@ -183,15 +199,17 @@ public class BookingService {
     }
 
     private Booking insertBooking(Long seatId, Long userId) {
-        return insertBooking(seatId, userId, BookingStatus.CONFIRMED, null);
+        return insertBooking(seatId, userId, BookingStatus.CONFIRMED, null, null);
     }
 
-    private Booking insertBooking(Long seatId, Long userId, BookingStatus status, Instant holdExpiresAt) {
+    private Booking insertBooking(Long seatId, Long userId, BookingStatus status,
+                                  Instant holdExpiresAt, String idempotencyKey) {
         Booking booking = new Booking();
         booking.setSeatId(seatId);
         booking.setUserId(userId);
         booking.setStatus(status);
         booking.setHoldExpiresAt(holdExpiresAt);
+        booking.setIdempotencyKey(idempotencyKey);
         return bookingRepository.saveAndFlush(booking);
     }
 }

@@ -2,11 +2,13 @@ package com.sahil.ticketbooking.web;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.sahil.ticketbooking.service.ConcurrentBookingException;
+import com.sahil.ticketbooking.service.IdempotencyKeyMismatchException;
 import com.sahil.ticketbooking.service.InvalidBookingStateException;
 import com.sahil.ticketbooking.service.ResourceNotFoundException;
 import com.sahil.ticketbooking.service.SeatAlreadyBookedException;
@@ -30,6 +32,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidBookingStateException.class)
     public ProblemDetail handleInvalidState(InvalidBookingStateException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(IdempotencyKeyMismatchException.class)
+    public ProblemDetail handleKeyMismatch(IdempotencyKeyMismatchException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatusCode.valueOf(422), ex.getMessage());
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

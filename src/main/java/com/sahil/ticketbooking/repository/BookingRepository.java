@@ -22,6 +22,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     // SELECT ... FROM bookings WHERE seat_id = ? AND status IN (...)
     boolean existsBySeatIdAndStatusIn(Long seatId, Collection<BookingStatus> statuses);
 
+    // Finds the booking created by an earlier request with this idempotency key.
+    Optional<Booking> findByIdempotencyKey(String idempotencyKey);
+
     // Loads one booking and locks its row (SELECT ... FOR UPDATE).
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT b FROM Booking b WHERE b.id = :id")

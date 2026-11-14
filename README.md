@@ -101,6 +101,7 @@ Example (on Windows PowerShell use `curl.exe` and put the JSON in a file):
 | `BookingConcurrencyTest` | 200 threads, 1 seat, for each of the three strategies: exactly 1 booking; pessimistic and optimistic have zero database-level rejections |
 | `BookingBenchmarkTest` | The benchmark above, plus a correctness check on every run |
 | `IdempotencyTest` | 50 concurrent identical requests create exactly 1 booking; a key reused for a different seat is rejected |
+| `BookingApiTest` | Real HTTP requests against the running app: booking, 404 and 400 errors, hold/confirm/cancel, expired holds, idempotency replay, event and seat listing |
 
 ## Run it
 
@@ -136,4 +137,5 @@ Tests run against a separate database. Create it once with `psql -U postgres -c 
 - **Idempotency keys are global,** not scoped per user. A key used by one user and then by another gets a 422.
 - Tested against a single application instance and one local PostgreSQL. The benchmark numbers are from one laptop.
 - The optimistic strategy is implemented and tested but not used by the API; the pessimistic one is, because on a hot seat it gives clean rejections with no wasted work.
+
 

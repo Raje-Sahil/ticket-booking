@@ -27,7 +27,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("SELECT b FROM Booking b WHERE b.id = :id")
     Optional<Booking> findByIdForUpdate(@Param("id") Long id);
 
-    // Marks this seat's holds that have run out as EXPIRED. Returns how many were changed.
+    // Marks one seat's holds that have run out as EXPIRED. Returns how many were changed.
     @Modifying
     @Query("UPDATE Booking b SET b.status = :expired "
             + "WHERE b.seatId = :seatId AND b.status = :held AND b.holdExpiresAt < :now")
@@ -35,6 +35,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                          @Param("now") Instant now,
                          @Param("held") BookingStatus held,
                          @Param("expired") BookingStatus expired);
+
+    // Marks EVERY hold that has run out as EXPIRED (used by the background job).
+    @Modifying
+    @Query("UPDATE Booking b SET b.status = :expired "
+            + "WHERE b.status = :held AND b.holdExpiresAt < :now")
+    int expireAllStaleHolds(@Param("now") Instant now,
+                            @Param("held") BookingStatus held,
+                            @Param("expired") BookingStatus expired);
 
     // Seats of one event that are NOT available right now:
     // confirmed bookings, plus holds that have not yet run out.
